@@ -3,20 +3,29 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Liew Yang's Adventure Diary - Personal Kids Memory Blog API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: memories
+    description: Photo/video memory feed
+  - name: diary
+    description: Diary book entries
+  - name: milestones
+    description: Life milestones
+  - name: profile
+    description: Child profile
+  - name: comments
+    description: Comments on memories
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +33,384 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get child profile
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    put:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update child profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileBody"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+
+  /memories:
+    get:
+      operationId: listMemories
+      tags: [memories]
+      summary: List all memories
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [photo, video]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of memories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryList"
+    post:
+      operationId: createMemory
+      tags: [memories]
+      summary: Create a new memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemoryBody"
+      responses:
+        "201":
+          description: Created memory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+
+  /memories/{id}:
+    get:
+      operationId: getMemory
+      tags: [memories]
+      summary: Get a specific memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Memory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+    put:
+      operationId: updateMemory
+      tags: [memories]
+      summary: Update a memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemoryBody"
+      responses:
+        "200":
+          description: Updated memory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+    delete:
+      operationId: deleteMemory
+      tags: [memories]
+      summary: Delete a memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /memories/{id}/like:
+    post:
+      operationId: likeMemory
+      tags: [memories]
+      summary: Toggle like on a memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated memory with new like count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+
+  /memories/{id}/comments:
+    get:
+      operationId: listComments
+      tags: [comments]
+      summary: List comments for a memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: addComment
+      tags: [comments]
+      summary: Add a comment to a memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCommentBody"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /diary:
+    get:
+      operationId: listDiaryEntries
+      tags: [diary]
+      summary: List all diary entries
+      responses:
+        "200":
+          description: List of diary entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DiaryEntry"
+    post:
+      operationId: createDiaryEntry
+      tags: [diary]
+      summary: Create a new diary entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDiaryEntryBody"
+      responses:
+        "201":
+          description: Created diary entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiaryEntry"
+
+  /diary/{id}:
+    get:
+      operationId: getDiaryEntry
+      tags: [diary]
+      summary: Get a specific diary entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Diary entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiaryEntry"
+    put:
+      operationId: updateDiaryEntry
+      tags: [diary]
+      summary: Update a diary entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDiaryEntryBody"
+      responses:
+        "200":
+          description: Updated diary entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiaryEntry"
+    delete:
+      operationId: deleteDiaryEntry
+      tags: [diary]
+      summary: Delete a diary entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /milestones:
+    get:
+      operationId: listMilestones
+      tags: [milestones]
+      summary: List all milestones
+      responses:
+        "200":
+          description: List of milestones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Milestone"
+    post:
+      operationId: createMilestone
+      tags: [milestones]
+      summary: Create a new milestone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMilestoneBody"
+      responses:
+        "201":
+          description: Created milestone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Milestone"
+
+  /milestones/{id}:
+    put:
+      operationId: updateMilestone
+      tags: [milestones]
+      summary: Update a milestone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMilestoneBody"
+      responses:
+        "200":
+          description: Updated milestone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Milestone"
+    delete:
+      operationId: deleteMilestone
+      tags: [milestones]
+      summary: Delete a milestone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [memories]
+      summary: Get summary stats for the blog
+      responses:
+        "200":
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+
+  /recent:
+    get:
+      operationId: getRecentActivity
+      tags: [memories]
+      summary: Get recent memories and diary entries
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecentActivity"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +421,260 @@ components:
       required:
         - status
 
+    Profile:
+      type: object
+      properties:
+        id:
+          type: integer
+        childName:
+          type: string
+        tagline:
+          type: string
+        photoUrl:
+          type: string
+          nullable: true
+        birthDate:
+          type: string
+          nullable: true
+      required:
+        - id
+        - childName
+        - tagline
+
+    UpdateProfileBody:
+      type: object
+      properties:
+        childName:
+          type: string
+        tagline:
+          type: string
+        photoUrl:
+          type: string
+          nullable: true
+        birthDate:
+          type: string
+          nullable: true
+
+    Memory:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [photo, video]
+        mediaUrl:
+          type: string
+        caption:
+          type: string
+          nullable: true
+        likes:
+          type: integer
+        commentCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - type
+        - mediaUrl
+        - likes
+        - commentCount
+        - createdAt
+
+    MemoryList:
+      type: object
+      properties:
+        memories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Memory"
+        total:
+          type: integer
+      required:
+        - memories
+        - total
+
+    CreateMemoryBody:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [photo, video]
+        mediaUrl:
+          type: string
+        caption:
+          type: string
+          nullable: true
+      required:
+        - type
+        - mediaUrl
+
+    UpdateMemoryBody:
+      type: object
+      properties:
+        caption:
+          type: string
+          nullable: true
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        memoryId:
+          type: integer
+        author:
+          type: string
+        text:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - memoryId
+        - author
+        - text
+        - createdAt
+
+    AddCommentBody:
+      type: object
+      properties:
+        author:
+          type: string
+        text:
+          type: string
+      required:
+        - author
+        - text
+
+    DiaryEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - date
+        - title
+        - message
+        - images
+        - createdAt
+
+    CreateDiaryEntryBody:
+      type: object
+      properties:
+        date:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+      required:
+        - date
+        - title
+        - message
+        - images
+
+    Milestone:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        date:
+          type: string
+        icon:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        order:
+          type: integer
+      required:
+        - id
+        - title
+        - date
+        - icon
+        - order
+
+    CreateMilestoneBody:
+      type: object
+      properties:
+        title:
+          type: string
+        date:
+          type: string
+        icon:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        order:
+          type: integer
+      required:
+        - title
+        - date
+        - icon
+        - order
+
+    Stats:
+      type: object
+      properties:
+        totalMemories:
+          type: integer
+        totalPhotos:
+          type: integer
+        totalVideos:
+          type: integer
+        totalDiaryEntries:
+          type: integer
+        totalMilestones:
+          type: integer
+        totalLikes:
+          type: integer
+      required:
+        - totalMemories
+        - totalPhotos
+        - totalVideos
+        - totalDiaryEntries
+        - totalMilestones
+        - totalLikes
+
+    RecentActivity:
+      type: object
+      properties:
+        recentMemories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Memory"
+        recentDiaryEntries:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiaryEntry"
+      required:
+        - recentMemories
+        - recentDiaryEntries

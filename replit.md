@@ -1,19 +1,21 @@
-# [Project name]
+# Liew Yang's Adventure Diary
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A warm, playful personal kids memory blog for Liew Yang — a digital storybook where parents capture every precious moment for their child's future reading.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/kids-blog run dev` — run the frontend (port auto-assigned)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec (then fix `lib/api-zod/src/index.ts` to only export from `./generated/api`)
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React + Vite, Tailwind CSS, Quicksand font, framer-motion, wouter
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -22,23 +24,44 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — Source of truth for API contracts
+- `lib/api-client-react/src/generated/` — Generated React Query hooks
+- `lib/api-zod/src/generated/` — Generated Zod schemas
+- `lib/db/src/schema/` — Drizzle ORM schema files (profile, memories, comments, diary, milestones)
+- `artifacts/api-server/src/routes/` — Express route handlers
+- `artifacts/kids-blog/src/pages/` — React pages (Home, Memories, Diary, Milestones, Videos, Admin)
+- `artifacts/kids-blog/src/components/` — Shared components (Navbar)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- OpenAPI-first: all API contracts defined in YAML, hooks + Zod schemas generated via Orval
+- orval zod config uses `mode: "single"` to avoid duplicate exports; `lib/api-zod/src/index.ts` only re-exports `./generated/api`
+- Admin panel protected by simple localStorage password ("liewyang2024") — no server-side auth for this private family app
+- Images stored as URLs (no file upload storage) — parents paste image URLs to add photos/videos
+- All floating decorations are CSS-animated emoji/SVG elements — no external animation library needed
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Home** (`/`) — Hero with "Hi, I'm Liew Yang!" greeting, animated floating decorations (clouds, stars, cars), stats row, recent memories grid, diary preview
+- **Memories** (`/memories`) — Instagram-style photo/video grid with likes, comments, filtering
+- **Diary** (`/diary`) — Open storybook UI with page-turn navigation, paper texture, left-right book spread
+- **Milestones** (`/milestones`) — Horizontal timeline + cards grid (First Smile, First Steps, etc.)
+- **Videos** (`/videos`) — Video gallery grid with playback modal
+- **Admin** (`/admin`) — Password-gated dashboard (pw: liewyang2024) with sidebar: Dashboard stats, Upload Media, Diary Editor, Milestones Manager, Settings (profile editor)
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Child's name: Liew Yang
+- App name: Liew Yang's Adventure Diary
+- Color palette: sky blue, light green, warm yellow, soft peach (all pastel)
+- Font: Quicksand (Google Fonts)
+- Style: cartoon-themed, rounded corners, soft shadows, warm and playful
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- After codegen, always overwrite `lib/api-zod/src/index.ts` to only export from `./generated/api` (codegen regenerates both exports causing TS2308 duplicate errors)
+- Orval zod target uses `mode: "single"` — types are in `generated/api.ts` only, no `generated/types/` folder
+- Do not run `pnpm dev` at workspace root — use workflows or `--filter` flags
 
 ## Pointers
 
