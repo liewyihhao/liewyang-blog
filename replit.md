@@ -37,7 +37,8 @@ A warm, playful personal kids memory blog for Liew Yang — a digital storybook 
 - OpenAPI-first: all API contracts defined in YAML, hooks + Zod schemas generated via Orval
 - orval zod config uses `mode: "single"` to avoid duplicate exports; `lib/api-zod/src/index.ts` only re-exports `./generated/api`
 - Admin panel protected by simple localStorage password ("liewyang2024") — no server-side auth for this private family app
-- Images stored as URLs (no file upload storage) — parents paste image URLs to add photos/videos
+- Images uploaded from device/camera via presigned GCS URLs (object storage) — no URL pasting needed
+- Upload flow: client requests presigned URL from `/api/storage/uploads/request-url`, then PUTs file directly to GCS; stored `objectPath` served via `/api/storage/objects/{path}`
 - All floating decorations are CSS-animated emoji/SVG elements — no external animation library needed
 
 ## Product

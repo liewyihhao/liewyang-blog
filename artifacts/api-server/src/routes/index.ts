@@ -6,6 +6,7 @@ import commentsRouter from "./comments";
 import diaryRouter from "./diary";
 import milestonesRouter from "./milestones";
 import statsRouter from "./stats";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(commentsRouter);
 router.use(diaryRouter);
 router.use(milestonesRouter);
 router.use(statsRouter);
+router.use(storageRouter);
 
 export default router;

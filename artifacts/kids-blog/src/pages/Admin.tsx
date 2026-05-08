@@ -1,13 +1,101 @@
-import { useState } from "react";
-import { LayoutDashboard, Upload, BookOpen, Trophy, Settings, LogOut, Lock } from "lucide-react";
+import { useState, useRef } from "react";
+import { LayoutDashboard, Upload, BookOpen, Trophy, Settings, LogOut, Lock, Camera, X } from "lucide-react";
 import { useGetStats, useGetProfile, useUpdateProfile, useCreateMemory, useListMemories, useDeleteMemory, useListDiaryEntries, useListMilestones, getListMemoriesQueryKey, getListDiaryEntriesQueryKey, getListMilestonesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/Navbar";
+import { useUpload } from "@workspace/object-storage-web";
 
 const ADMIN_PASSWORD = "liewyang2024";
+const STORAGE_BASE = "/api/storage";
+
+function toServingUrl(objectPath: string) {
+  return `${STORAGE_BASE}${objectPath}`;
+}
 
 type AdminTab = "dashboard" | "upload" | "diary" | "milestones" | "settings";
 
+/* ── File upload button component ── */
+function FileUploadButton({
+  accept,
+  onUploaded,
+  label,
+  previewUrl,
+  onClear,
+  disabled,
+  capture,
+}: {
+  accept: string;
+  onUploaded: (servingUrl: string) => void;
+  label: string;
+  previewUrl?: string;
+  onClear?: () => void;
+  disabled?: boolean;
+  capture?: "user" | "environment";
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const { uploadFile, isUploading, progress, error } = useUpload({
+    basePath: STORAGE_BASE,
+    onSuccess: (res) => {
+      onUploaded(toServingUrl(res.objectPath));
+      setLocalPreview(null);
+    },
+  });
+
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLocalPreview(URL.createObjectURL(file));
+    await uploadFile(file);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const preview = previewUrl || localPreview;
+
+  return (
+    <div className="space-y-3">
+      {preview && (
+        <div className="relative inline-block">
+          <img src={preview} alt="Preview" className="w-32 h-32 rounded-2xl object-cover shadow-md border-4 border-white" />
+          {onClear && !isUploading && (
+            <button
+              type="button"
+              onClick={() => { onClear(); setLocalPreview(null); }}
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:bg-red-600"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          disabled={disabled || isUploading}
+          onClick={() => inputRef.current?.click()}
+          className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-2xl font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          <Camera size={15} />
+          {isUploading ? `Uploading… ${progress}%` : label}
+        </button>
+        {/* Allow camera capture on mobile */}
+        <input
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          capture={capture}
+          className="hidden"
+          onChange={handleChange}
+        />
+        <span className="text-xs text-muted-foreground">From device or camera</span>
+      </div>
+      {error && <p className="text-xs text-destructive font-medium">{error.message}</p>}
+    </div>
+  );
+}
+
+/* ── Password Gate ── */
 function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState(false);
@@ -55,6 +143,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   );
 }
 
+/* ── Dashboard ── */
 function Dashboard() {
   const stats = useGetStats();
   const s = stats.data;
@@ -81,6 +170,7 @@ function Dashboard() {
   );
 }
 
+/* ── Upload Media ── */
 function UploadMedia() {
   const [type, setType] = useState<"photo" | "video">("photo");
   const [mediaUrl, setMediaUrl] = useState("");
@@ -90,12 +180,18 @@ function UploadMedia() {
   const memories = useListMemories();
   const deleteMemory = useDeleteMemory();
 
+  const handleFileUploaded = (servingUrl: string) => {
+    setMediaUrl(servingUrl);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mediaUrl) return;
     createMemory.mutate({ data: { type, mediaUrl, caption: caption || null } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListMemoriesQueryKey() });
-        setMediaUrl(""); setCaption("");
+        setMediaUrl("");
+        setCaption("");
       }
     });
   };
@@ -111,12 +207,13 @@ function UploadMedia() {
     <div className="space-y-6">
       <h2 className="text-xl font-bold">Upload Media</h2>
       <form onSubmit={handleSubmit} className="bg-muted/40 rounded-2xl p-5 space-y-4">
+        {/* Photo / Video toggle */}
         <div className="flex gap-3">
           {(["photo", "video"] as const).map((t) => (
             <button
               key={t}
               type="button"
-              onClick={() => setType(t)}
+              onClick={() => { setType(t); setMediaUrl(""); }}
               className={`flex-1 py-2.5 rounded-xl font-semibold text-sm capitalize transition-all ${
                 type === t ? "bg-primary text-white shadow-sm" : "bg-white border border-border hover:bg-muted"
               }`}
@@ -125,45 +222,46 @@ function UploadMedia() {
             </button>
           ))}
         </div>
+
+        {/* File upload */}
         <div>
-          <label className="block text-sm font-semibold mb-1.5">Media URL</label>
-          <input
-            type="url"
-            data-testid="upload-url"
-            required
-            placeholder="https://example.com/photo.jpg"
-            value={mediaUrl}
-            onChange={(e) => setMediaUrl(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          <label className="block text-sm font-semibold mb-2">
+            {type === "photo" ? "Choose Photo" : "Choose Video"}
+          </label>
+          <FileUploadButton
+            accept={type === "photo" ? "image/*" : "video/*"}
+            capture={type === "photo" ? "environment" : undefined}
+            onUploaded={handleFileUploaded}
+            label={type === "photo" ? "Select Photo / Take Photo" : "Select Video"}
+            previewUrl={mediaUrl || undefined}
+            onClear={() => setMediaUrl("")}
           />
         </div>
+
+        {/* Caption */}
         <div>
           <label className="block text-sm font-semibold mb-1.5">Caption (optional)</label>
           <input
             type="text"
             data-testid="upload-caption"
-            placeholder="Add a sweet caption..."
+            placeholder="Add a sweet caption…"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             className="w-full px-4 py-2.5 rounded-2xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
-        {mediaUrl && (
-          <div className="rounded-xl overflow-hidden">
-            <img src={mediaUrl} alt="Preview" className="w-full max-h-40 object-cover" />
-          </div>
-        )}
+
         <button
           type="submit"
           data-testid="upload-submit"
-          disabled={createMemory.isPending}
+          disabled={!mediaUrl || createMemory.isPending}
           className="w-full bg-primary text-white py-2.5 rounded-2xl font-bold hover:opacity-90 disabled:opacity-50"
         >
-          {createMemory.isPending ? "Uploading..." : "Upload Memory"}
+          {createMemory.isPending ? "Saving…" : "Save Memory"}
         </button>
       </form>
 
-      {/* Existing memories */}
+      {/* Existing memories grid */}
       <div>
         <h3 className="font-bold mb-3">All Memories ({memories.data?.total ?? 0})</h3>
         <div className="grid grid-cols-3 gap-2">
@@ -184,6 +282,7 @@ function UploadMedia() {
   );
 }
 
+/* ── Diary Manager ── */
 function DiaryManager() {
   const entries = useListDiaryEntries({ query: { queryKey: getListDiaryEntriesQueryKey() } });
   const data = entries.data ?? [];
@@ -192,9 +291,7 @@ function DiaryManager() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Diary Entries ({data.length})</h2>
-        <a href="/diary" className="text-primary text-sm font-semibold hover:underline">
-          Manage in Diary →
-        </a>
+        <a href="/diary" className="text-primary text-sm font-semibold hover:underline">Manage in Diary →</a>
       </div>
       <div className="space-y-2">
         {data.map((e) => (
@@ -215,6 +312,7 @@ function DiaryManager() {
   );
 }
 
+/* ── Milestones Manager ── */
 function MilestonesManager() {
   const milestones = useListMilestones({ query: { queryKey: getListMilestonesQueryKey() } });
   const data = milestones.data ?? [];
@@ -223,9 +321,7 @@ function MilestonesManager() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Milestones ({data.length})</h2>
-        <a href="/milestones" className="text-primary text-sm font-semibold hover:underline">
-          Manage →
-        </a>
+        <a href="/milestones" className="text-primary text-sm font-semibold hover:underline">Manage →</a>
       </div>
       <div className="space-y-2">
         {data.map((m) => (
@@ -248,6 +344,7 @@ function MilestonesManager() {
   );
 }
 
+/* ── Settings ── */
 function SettingsPanel() {
   const profile = useGetProfile();
   const updateProfile = useUpdateProfile();
@@ -299,18 +396,15 @@ function SettingsPanel() {
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold mb-1.5">Profile Photo URL</label>
-          <input
-            type="url"
-            data-testid="settings-photo"
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            placeholder="https://example.com/photo.jpg"
-            className="w-full px-4 py-2.5 rounded-2xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          <label className="block text-sm font-semibold mb-2">Profile Photo</label>
+          <FileUploadButton
+            accept="image/*"
+            capture="user"
+            onUploaded={(url) => setPhotoUrl(url)}
+            label="Upload Photo / Take Selfie"
+            previewUrl={photoUrl || undefined}
+            onClear={() => setPhotoUrl("")}
           />
-          {photoUrl && (
-            <img src={photoUrl} alt="Preview" className="mt-2 w-24 h-24 rounded-full object-cover shadow border-4 border-white" />
-          )}
         </div>
         <div>
           <label className="block text-sm font-semibold mb-1.5">Birth Date</label>
@@ -330,13 +424,14 @@ function SettingsPanel() {
             saved ? "bg-secondary text-white" : "bg-primary text-white hover:opacity-90"
           } disabled:opacity-50`}
         >
-          {saved ? "Saved!" : updateProfile.isPending ? "Saving..." : "Save Profile"}
+          {saved ? "Saved!" : updateProfile.isPending ? "Saving…" : "Save Profile"}
         </button>
       </form>
     </div>
   );
 }
 
+/* ── Main Admin page ── */
 export default function Admin() {
   const [unlocked, setUnlocked] = useState(localStorage.getItem("admin_unlocked") === "true");
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
