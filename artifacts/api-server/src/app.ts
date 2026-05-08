@@ -4,7 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
-const app: Express = express();
+export const app: Express = express();
 
 app.use(
   pinoHttp({
@@ -31,4 +31,3 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-export default app;
