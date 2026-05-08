@@ -16,7 +16,7 @@ router.get("/profile", async (req, res) => {
           tagline: "The journey of our little star",
         })
         .returning();
-      return res.json(inserted[0]);
+      res.json(inserted[0]); return;
     }
     res.json(profiles[0]);
   } catch (err) {
@@ -34,7 +34,7 @@ router.put("/profile", async (req, res) => {
         .insert(profileTable)
         .values({ childName, tagline, photoUrl, birthDate })
         .returning();
-      return res.json(inserted[0]);
+      res.json(inserted[0]); return;
     }
     const updated = await db
       .update(profileTable)

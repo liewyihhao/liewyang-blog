@@ -60,7 +60,7 @@ router.get("/memories/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const memory = await db.select().from(memoriesTable).where(eq(memoriesTable.id, id)).limit(1);
-    if (!memory.length) return res.status(404).json({ error: "Not found" });
+    if (!memory.length) { res.status(404).json({ error: "Not found" }); return; }
     const commentCnt = await db.select({ count: count() }).from(commentsTable).where(eq(commentsTable.memoryId, id));
     res.json({ ...memory[0], commentCount: commentCnt[0].count });
   } catch (err) {
@@ -78,7 +78,7 @@ router.put("/memories/:id", async (req, res) => {
       .set({ caption })
       .where(eq(memoriesTable.id, id))
       .returning();
-    if (!updated.length) return res.status(404).json({ error: "Not found" });
+    if (!updated.length) { res.status(404).json({ error: "Not found" }); return; }
     const commentCnt = await db.select({ count: count() }).from(commentsTable).where(eq(commentsTable.memoryId, id));
     res.json({ ...updated[0], commentCount: commentCnt[0].count });
   } catch (err) {
@@ -107,7 +107,7 @@ router.post("/memories/:id/like", async (req, res) => {
       .set({ likes: sql`${memoriesTable.likes} + 1` })
       .where(eq(memoriesTable.id, id))
       .returning();
-    if (!updated.length) return res.status(404).json({ error: "Not found" });
+    if (!updated.length) { res.status(404).json({ error: "Not found" }); return; }
     const commentCnt = await db.select({ count: count() }).from(commentsTable).where(eq(commentsTable.memoryId, id));
     res.json({ ...updated[0], commentCount: commentCnt[0].count });
   } catch (err) {

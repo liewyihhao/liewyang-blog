@@ -41,7 +41,7 @@ router.put("/milestones/:id", async (req, res) => {
       .set({ title, date, icon, imageUrl, note, order })
       .where(eq(milestonesTable.id, id))
       .returning();
-    if (!updated.length) return res.status(404).json({ error: "Not found" });
+    if (!updated.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(updated[0]);
   } catch (err) {
     req.log.error({ err }, "Failed to update milestone");

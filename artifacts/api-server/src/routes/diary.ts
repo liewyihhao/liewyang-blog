@@ -40,7 +40,7 @@ router.get("/diary/:id", async (req, res) => {
       .from(diaryEntriesTable)
       .where(eq(diaryEntriesTable.id, id))
       .limit(1);
-    if (!entry.length) return res.status(404).json({ error: "Not found" });
+    if (!entry.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(entry[0]);
   } catch (err) {
     req.log.error({ err }, "Failed to get diary entry");
@@ -57,7 +57,7 @@ router.put("/diary/:id", async (req, res) => {
       .set({ date, title, message, images: images ?? [] })
       .where(eq(diaryEntriesTable.id, id))
       .returning();
-    if (!updated.length) return res.status(404).json({ error: "Not found" });
+    if (!updated.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(updated[0]);
   } catch (err) {
     req.log.error({ err }, "Failed to update diary entry");
