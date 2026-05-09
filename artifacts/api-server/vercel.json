@@ -1,14 +1,7 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "index.mjs",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/" }
-  ],
   "buildCommand": "pnpm run build",
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile"
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
+  ]
 }
